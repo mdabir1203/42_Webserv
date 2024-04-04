@@ -276,7 +276,6 @@ void ServerSocket::Loop(bool end)
 		}
 		if (ret == 0)
 			std::cout << "IN TIMEOUT" << std::endl;
-		int read = ret;
 		std::cout << std::endl
 				  << "==== WAITING ====" << std::endl;
 		for (int socket_ID = 0; socket_ID <= max_socket; socket_ID++)

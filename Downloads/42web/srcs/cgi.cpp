@@ -1,4 +1,10 @@
 #include "webserv.hpp"
+#include <sys/types.h> // Include for pid_t
+#include <sys/wait.h> // Include for waitpid
+
+// Your existing code
+
+
 
 /*
 This function executes scripts that have a shebang. In our case, it's cgi.php but it can be .py or .pl.

@@ -40,8 +40,12 @@ int	ServerSocket::checkPerms(const std::string &buffer)
 					if (it->second == "all")
 					{
 						it = currentServ.getServLocation(i, "return");
+						std::istringstream iss(it->second);
+        				double value;
+        				iss >> value; 
+
 						if (it != currentServ.getLocationEnd(i))
-							return (stod(it->second));
+							return (value);
 					}
 				}
 				for (it = currentServ.getLocationBegin(i); it != currentServ.getLocationEnd(i); it++)
@@ -248,7 +252,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 	int inside = 0;
 	int trigger;
 	int bracket_counter = 0;
-	std::ifstream file(configFile);
+	std::ifstream file(configFile.c_str());
 	if (!file.is_open())
 	{
 		std::cerr << "Error opening configuration file" << std::endl;
@@ -263,6 +267,8 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 	while (std::getline(file, line))
 	{
 		std::istringstream iss(line);
+		double number;
+		iss >> number;
 		std::string key, value;
 		if (line.find("server") == 0)
 		{
@@ -299,8 +305,8 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 				{
 					if (checkValue(value))
 					{
-						if (stod(value) >= 1024 && stod(value) <= 65535)
-							server[ind_serv].setPorts(stod(value));
+						if (number >= 1024 && number <= 65535)
+							server[ind_serv].setPorts(number);
 						else
 						{
 							std::cerr << "Error in ports config" << std::endl;

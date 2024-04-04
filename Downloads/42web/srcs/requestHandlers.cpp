@@ -43,7 +43,10 @@ std::string ServerSocket::getFileInfo(std::string path, int type)
 	if (fin == NULL || return_value == -1)
 	{
 		std::map<std::string, std::string>::iterator it;
-		it = currentServ.getServError(std::to_string(404));
+		std::ostringstream oss;
+		oss << 404;
+		std::string errorCodeStr = oss.str();
+		it = currentServ.getServError(errorCodeStr);
 		if (it != currentServ.getErrorEnd())
 		{
 			std::string tmp = it->second;
@@ -119,7 +122,8 @@ std::string ServerSocket::handlePostRequest(const std::string& path, const std::
 	bufferSize = getLastPart(buffer, "Content-Length: ");
 	pos = buffer.find("Content-Length: ");
 	std::string content_len = buffer.substr(pos + 16, 1);
-	if (stod(content_len) == 0)
+	double content_len_d = atof(content_len.c_str());
+	if (content_len_d == 0)
 		return (callErrorFiles(400));
 
 	size_t pos_marker = buffer.find("boundary=");
@@ -137,7 +141,7 @@ std::string ServerSocket::handlePostRequest(const std::string& path, const std::
 		if (it != currentServ.getConfEnd())
 		{
 			double len = extracted_line.length();
-			if (len > stod(it->second))
+			if (len > atof(it->second.c_str()))
 				return (callErrorFiles(413));
 		}
 		return ("HTTP/1.1 200 OK\r\n\r\n" + extracted_line);
@@ -159,7 +163,7 @@ std::string ServerSocket::handlePostRequest(const std::string& path, const std::
 	if (it != currentServ.getConfEnd())
 	{
 		double len = body.length();
-		if (len > stod(it->second))
+		if (len > atof(it->second.c_str()))
 			return (callErrorFiles(413));
 	}
 	size_t contentDispositPos = buffer.find("Content-Disposition");

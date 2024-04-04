@@ -11,7 +11,11 @@ std::string ServerSocket::buildErrorFiles(const std::string error)
 
 std::string ServerSocket::callErrorFiles(const int error)
 {
-    std::map<std::string, std::string>::iterator it = currentServ.getServError(std::to_string(error));
+    std::ostringstream oss;
+    oss << error; // Convert error code to string
+    std::string errorStr = oss.str(); // Get the string representation of the error code
+
+    std::map<std::string, std::string>::iterator it = currentServ.getServError(errorStr);
     if (it != currentServ.getErrorEnd())
         return ("HTTP/1.1 302 Found\r\nLocation: " + it->second + "\r\n\r\n");
     switch(error)
