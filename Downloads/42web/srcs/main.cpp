@@ -254,7 +254,7 @@ and either receive requests from the client or respond to them.
 */
 void ServerSocket::Loop(bool end)
 {
-	int ret, read = 0, new_sd;
+	int ret, new_sd;
 	bool close_connection;
 
 	read_sockets = active_sockets;
@@ -276,7 +276,7 @@ void ServerSocket::Loop(bool end)
 		}
 		if (ret == 0)
 			std::cout << "IN TIMEOUT" << std::endl;
-		read = ret;
+		int read = ret;
 		std::cout << std::endl
 				  << "==== WAITING ====" << std::endl;
 		for (int socket_ID = 0; socket_ID <= max_socket; socket_ID++)
