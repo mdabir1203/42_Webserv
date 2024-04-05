@@ -2,7 +2,7 @@ server {
 	listen 8181
 	listen 8180
 	client_max_body_size 10
-	server_name Server
+	server_name server
 	error_page 404 /404.html
 	
 	web_root tools

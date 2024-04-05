@@ -1,6 +1,6 @@
 server {
 	listen 4242
-	server_name Server1
+	server_name server
 	error_page 404 /error/404.html
 	client_max_body_size 1000000
 	web_root tools

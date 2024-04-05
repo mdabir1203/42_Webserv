@@ -14,7 +14,9 @@ void mfree(char **f)
     int i = 0;
 
     while(f[i] != 0)
-        free (f[i++]);
+    {
+		free (f[i++]);
+	} 
 	free (f);
 }
 
@@ -42,7 +44,7 @@ bool checkValue(const std::string value)
 			std::cerr << "Error: wrong characters in config detected" << std::endl;
 			exit(1);
 		}
-		stod(value);
+		atof(value.c_str());
 		return true;
 	}
 	catch(const std::exception& e) {
@@ -52,11 +54,16 @@ bool checkValue(const std::string value)
 	return false;
 }
 
-void    ServerSocket::checkFdSets()
+void ServerSocket::checkFdSets()
 {
-    if (FD_ISSET(currentSocket, &read_sockets))
-        FD_CLR(currentSocket, &active_sockets);
-    if (FD_ISSET(currentSocket, &write_sockets))
-        FD_CLR(currentSocket, &active_write);
-	close(currentSocket);
+	if (FD_ISSET(currentSocket, &read_sockets))
+	{
+		FD_CLR(currentSocket, &active_sockets);
+		close(currentSocket);
+	}
+	if (FD_ISSET(currentSocket, &write_sockets))
+	{
+		FD_CLR(currentSocket, &active_write);
+		close(currentSocket);
+	}
 }

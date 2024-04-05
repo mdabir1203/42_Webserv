@@ -1,5 +1,11 @@
 #include "webserv.hpp"
 
+// Build an HTML error page with the given error message. 
+// "HTTP/1.1 " is the HTTP version and status line prefix.
+// "error" is the error message or code, which is appended to the status line.
+// "\r\n\r\n" represents the blank line separating the HTTP headers from the response body.
+// "response" is the HTML content generated in the previous step.
+
 std::string ServerSocket::buildErrorFiles(const std::string error)
 {
     std::string response = "<html><head><http-equiv=\"Content-type\" content=\"text/html;\
@@ -9,6 +15,7 @@ std::string ServerSocket::buildErrorFiles(const std::string error)
     return ("HTTP/1.1 " + error + "\r\n\r\n" + response);
 }
 
+// Generate an appropriate error response based on the error code
 std::string ServerSocket::callErrorFiles(const int error)
 {
     std::ostringstream oss;
@@ -16,6 +23,8 @@ std::string ServerSocket::callErrorFiles(const int error)
     std::string errorStr = oss.str(); // Get the string representation of the error code
 
     std::map<std::string, std::string>::iterator it = currentServ.getServError(errorStr);
+
+    // Check if a custom error page is defined
     if (it != currentServ.getErrorEnd())
         return ("HTTP/1.1 302 Found\r\nLocation: " + it->second + "\r\n\r\n");
     switch(error)

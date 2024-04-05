@@ -213,7 +213,7 @@ void ServerSocket::parseLocation(const std::vector<std::string> &tmpLine, int in
 				{
 					if (!checkValue(value))
 					{
-						std::cerr << "Error: wrong config format - code error" << std::endl;
+						std::cerr << "Error: 1 wrong config format - code error" << std::endl;
 						exit(1);
 					}
 				}
@@ -267,14 +267,12 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 	while (std::getline(file, line))
 	{
 		std::istringstream iss(line);
-		double number;
-		iss >> number;
 		std::string key, value;
 		if (line.find("server") == 0)
 		{
 			if (inside == 1)
 			{
-				std::cerr << "Error: wrong config format" << std::endl;
+				std::cerr << "Error: 2 wrong config format" << std::endl;
 				exit(1);
 			}
 			inside = 1;
@@ -283,7 +281,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 				bracket_counter++;
 			else
 			{
-				std::cerr << "Error: wrong config format" << std::endl;
+				std::cerr << "Error: 3 wrong config format" << std::endl;
 				exit(1);
 			}
 			continue;
@@ -298,13 +296,14 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 			{
 				if (inside == 0)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 4 wrong config format" << std::endl;
 					exit(1);
 				}
 				if (iss >> value)
 				{
 					if (checkValue(value))
 					{
+						double number = atof(value.c_str());
 						if (number >= 1024 && number <= 65535)
 							server[ind_serv].setPorts(number);
 						else
@@ -329,7 +328,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 			{
 				if (inside == 0)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 5 wrong config format" << std::endl;
 					exit(1);
 				}
 				if (iss >> key)
@@ -338,20 +337,20 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 					{
 						if (!checkValue(key))
 						{
-							std::cerr << "Error: wrong config format" << std::endl;
+							std::cerr << "Error: 6 wrong config format" << std::endl;
 							exit(1);
 						}
 						server[ind_serv].setServError(key, value);
 					}
 					else
 					{
-						std::cerr << "Error: wrong error_page format" << std::endl;
+						std::cerr << "Error: 7 wrong error_page format" << std::endl;
 						exit(1);
 					}
 				}
 				else
 				{
-					std::cerr << "Error: wrong error_page format" << std::endl;
+					std::cerr << "Error: 8 wrong error_page format" << std::endl;
 					exit(1);
 				}
 				if (iss >> value)
@@ -364,14 +363,14 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 			{
 				if (inside == 0)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 9 wrong config format" << std::endl;
 					exit(1);
 				}
 				trigger = 0;
 				std::vector<std::string> tmpLine;
 				if (line.find("{") == std::string::npos)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 10 wrong config format" << std::endl;
 					exit(1);
 				}
 				tmpLine.push_back(line);
@@ -379,7 +378,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 				{
 					if (line.find("{") != std::string::npos)
 					{
-						std::cerr << "Error: wrong config format" << std::endl;
+						std::cerr << "Error: 11 wrong config format" << std::endl;
 						exit(1);
 					}
 					if (line.find("}") != std::string::npos)
@@ -392,7 +391,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 				}
 				if (trigger == 0)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 12 wrong config format" << std::endl;
 					exit(1);
 				}
 				parseLocation(tmpLine, index, ind_serv);
@@ -402,21 +401,21 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 			{
 				if (inside == 0)
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 13 wrong config format" << std::endl;
 					exit(1);
 				}
 				if (iss >> value)
 					server[ind_serv].setServConf(key, value);
 				else
 				{
-					std::cerr << "Error: wrong config format" << std::endl;
+					std::cerr << "Error: 14 wrong config format" << std::endl;
 					exit(1);
 				}
 				if (key == "client_max_body_size")
 				{
 					if (!checkValue(value))
 					{
-						std::cerr << "Error: wrong config format" << std::endl;
+						std::cerr << "Error: 15 wrong config format" << std::endl;
 						exit(1);
 					}
 				}
@@ -432,7 +431,7 @@ void ServerSocket::readConfigFile(const std::string &configFile)
 	}
 	if (bracket_counter % 2 != 0 || bracket_counter == 0)
 	{
-		std::cerr << "Error: wrong config format" << std::endl;
+		std::cerr << "Error: 16 wrong config format" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	for (int i = 0; i < servSize; i++)

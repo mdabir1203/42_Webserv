@@ -287,7 +287,7 @@ void ServerSocket::Loop(bool end)
 					new_sd = accept(socket_ID, NULL, NULL);
 					if (new_sd < 0)
 					{
-						if (errno != EWOULDBLOCK)
+						if (errno != EWOULDBLOCK) // Errrno is not allowed
 						{
 							std::cerr << "Error accepting client connection" << std::endl;
 							end = true;
@@ -366,13 +366,13 @@ int main(int argc, char **argv)
 			ss.Init(argv[1]);
 		}
 		else
-			std::cerr << "Error: Unexistant configuration file" << std::endl;
+			std::cerr << "Error: configuration file doesn't exist" << std::endl;
 		file.close();
 	}
 	else if (argc == 1)
 	{
 		ServerSocket ss;
-		ss.Init("tools/conf/config.txt");
+		ss.Init("tools/conf/config_2.txt");
 	}
 	else
 		std::cout << "Wrong number of arguments" << std::endl;
