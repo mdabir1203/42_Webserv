@@ -24,7 +24,7 @@ OBJS		:= ${addprefix ${OBJS_DIR}, ${OBJS_FILES}}
 
 #COMMANDS
 CC			= c++
-CFLAGS		= -Wall -Wextra -Werror -std=c++98 -g3
+CFLAGS		= -Wall -Wextra -Werror -std=c++98 -g3 -fsanitize=address
 AR			= ar rcs
 MKDIR		= mkdir -p
 RM			= rm -rf
