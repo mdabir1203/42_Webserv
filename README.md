@@ -107,24 +107,31 @@ To build and run the web server, follow these steps:
 ## Tree Structure 
 
 Visualization of IPC and Sockets
+
 ├─ Representation of Kernel
-│    ├─ The kernel is represented as a red circle at the center of the canvas.  
+│    ├─ The kernel is represented as a red circle at the center of the canvas.
 │    └─ This is a reasonable representation as the kernel is the core component that manages system resources, including sockets and network connections.
+
 ├─ Representation of Processes  
 │    ├─ Processes are represented as green circles scattered around the canvas.
 │    └─ This is a reasonable representation as processes are separate entities running on the system.
+
 ├─ Representation of Sockets
 │    ├─ Sockets are represented as smaller blue circles inside the process circles.
 │    ├─ This representation suggests that sockets are created and owned by processes, which is accurate.
 │    └─ However, it might be more intuitive to represent sockets as separate entities from processes, as sockets are managed by the kernel and can be shared across processes.
+
 ├─ Representation of Connections
 │    ├─ Connections between sockets are represented as white lines connecting the sockets.
 │    └─ This is a reasonable representation as connections are established between sockets to enable communication.  
+
 ├─ Interaction
 │    ├─ The user can create sockets by clicking on processes. 
 │    ├─ Sockets automatically connect when they are close enough to each other.
 │    ├─ This interaction allows for the dynamic creation and connection of sockets, which is a good representation of how sockets are created and used in real-world scenarios.  
 │    └─ However, it might be more realistic to have a separate step for explicitly connecting sockets, as connections are not always automatically established based on proximity.
+
+
 └─ Overall Representation
      ├─ The visualization provides a high-level representation of the key components involved in IPC and sockets: the kernel, processes, sockets, and connections.
      ├─ The visual representations and interactions are reasonably intuitive and capture the essential concepts.
