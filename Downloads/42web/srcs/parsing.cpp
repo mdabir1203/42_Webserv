@@ -1,10 +1,12 @@
 #include "webserv.hpp"
 
-//It iterates through locations to find a match
-//	- Checks deny,
-//	then allow conditions on matching locations
-//	-		Returns allow or configured deny code
-//	-		No match denies the request
+/**
+	- Checks deny,
+	then allow conditions on matching locations
+	-		Returns allow or configured deny code
+	-		No match denies the request
+
+**/
 
 bool	ServerSocket::isMethodAllowed(const std::string &method, int locationIndex)
 {
@@ -45,6 +47,18 @@ bool ServerSocket::doesLocationMatch(const std::string &path, int locationIndex)
 	return it->second.substr(0, it->second.rfind("/")) == path.substr(0, path.rfind("/"));
 }
 
+/**
+ * Parse HTTP request -> Extract method and path.
+Construct absolute path -> Append requested path to server's web root.
+Check if path is a directory -> If yes, append a slash.
+Start iteration over server's locations.
+Check if location matches path -> If yes, check if access is denied.
+If access is denied -> Return HTTP status code.
+If access is not denied -> Check if HTTP method is allowed.
+If method is allowed -> Return 1.
+If no matching location or method not allowed -> Return 0.
+*/
+
 int ServerSocket::checkPerms(const std::string &buffer)
 {
 	std::istringstream request(buffer);
@@ -68,6 +82,7 @@ int ServerSocket::checkPerms(const std::string &buffer)
 		}
 		i++;
 	}
+	return 0;
 }
 
 std::map<int, std::string> ServerSocket::checkForRedirects(std::string path)
@@ -110,63 +125,71 @@ void ServerSocket::prependWebRoot(std::string &path)
 
 void ServerSocket::appendDefaultFileIfRoot(std::string &path, int &trigger)
 {
-	if (path.length() == 1)
-	{
-		for (int i = 0; i < currentServ.getLocationSize(); i++)
-		{
-			std::map<std::string, std::string>::iterator it = currentServ.getServLocation(i, "location");
-			if (it != currentServ.getLocationEnd(i))
-			{
-				if (it->second == "/")
-				{
-					it = currentServ.getServLocation(i, "default_file");
-					if (it != currentServ.getLocationEnd(i))
-					{
-						path = path + it->second;
-						trigger = 1;
-					}
-				}
-			}
-		}
-	}
+    // We're checking if the path is just a "/", which is like the front door of a website.
+    if (path.length() == 1)
+    {
+        // Now we're going to look at all the different rooms (or 'locations') in our website.
+        for (int i = 0; i < currentServ.getLocationSize(); i++)
+        {
+            // We're asking, "Hey, what's this room's name?"
+            std::map<std::string, std::string>::iterator it = currentServ.getServLocation(i, "location");
+
+            // If we find a room that's also called "/", which is like the main hall of our website,
+            if (it != currentServ.getLocationEnd(i) && it->second == "/")
+            {
+                // We ask, "What's the first thing (or 'default file') people should see in this room?"
+                it = currentServ.getServLocation(i, "default_file");
+
+                // If there's something to show, we add it to our path (like guiding them to a painting in the room)
+                // and raise our flag (or 'trigger') to say we've found something.
+                if (it != currentServ.getLocationEnd(i))
+                {
+                    path = path + it->second;
+                    trigger = 1;
+                }
+            }
+        }
+    }
 }
 
 void ServerSocket::handleDirectoryOrFile(std::string &path, int &trigger)
 {
-	struct stat s;
-	std::string path_cpy = path;
-	std::map<std::string, std::string>::iterator it;
+    struct stat s;
 
-	if (stat(path.c_str(), &s) == 0)
-	{
-		if (s.st_mode & S_IFDIR)
-		{
-			// If path is a directory, check if autoindex is on
-			for (int i = 0; i < currentServ.getLocationSize(); i++)
-			{
-				it = currentServ.getServLocation(i, "location");
-				if (it != currentServ.getLocationEnd(i))
-				{
-					if (it->second == path)
-					{
-						it = currentServ.getServLocation(i, "autoindex");
-						if (it != currentServ.getLocationEnd(i) && it->second == "on")
-						{
-							path = path + "index.html";
-							trigger = 1;
-						}
-					}
-				}
-			}
-		}
-		else if (s.st_mode & S_IFREG)
-		{
-			// If path is a file, set trigger to 1
-			trigger = 1;
-		}
-	}
+    // Check if the path exists
+    if (stat(path.c_str(), &s) == 0)
+    {
+        // If the path is a directory
+        if (s.st_mode & S_IFDIR)
+        {
+            // Iterate over all the server's locations
+            for (int i = 0; i < currentServ.getLocationSize(); i++)
+            {
+                // Get the location configuration
+                std::map<std::string, std::string>::iterator it = currentServ.getServLocation(i, "location");
+
+                // If the location configuration exists and matches the path
+                if (it != currentServ.getLocationEnd(i) && it->second == path)
+                {
+                    // Check if autoindex is on for this location
+                    it = currentServ.getServLocation(i, "autoindex");
+
+                    // If autoindex is on, append "index.html" to the path and set trigger to 1
+                    if (it != currentServ.getLocationEnd(i) && it->second == "on")
+                    {
+                        path = path + "index.html";
+                        trigger = 1;
+                    }
+                }
+            }
+        }
+        // If the path is a regular file, set trigger to 1
+        else if (s.st_mode & S_IFREG)
+        {
+            trigger = 1;
+        }
+    }
 }
-
 std::map<int, std::string> ServerSocket::generateResponse(std::string path, int trigger)
 {
 	std::map<int, std::string> response;
@@ -220,53 +243,12 @@ std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
 	return generateResponse(path, trigger);
 }
 
-void ServerSocket::parseLocation(const std::vector<std::string> &tmpLine, int index, int ind_serv)
-{
-	(void) index;
-	std::map<std::string, std::string> tmp;
-	for (size_t i = 0; i < tmpLine.size(); i++)
-	{
-		std::string toRead = tmpLine[i];
-		std::istringstream iss(toRead);
-		std::string key, value;
-		if (iss >> key)
-		{
-			if (iss >> value)
-			{
-				if (key == "return")
-				{
-					if (!checkValue(value))
-					{
-						std::cerr << "Error: 1 wrong config format - code error" << std::endl;
-						exit(1);
-					}
-				}
-				if (key == "}")
-					break;
-				if (key == "allow")
-					tmp[value] = key;
-				else
-					tmp[key] = value;
-			}
-			else
-			{
-				std::cerr << "Error in location conf" << std::endl;
-				exit(1);
-			}
-			if (iss >> value && i != 0)
-			{
-				std::cerr << "Error: too many arguments in one line in conf" << std::endl;
-				exit(1);
-			}
-		}
-		else
-		{
-			std::cerr << "Error in location conf" << std::endl;
-			exit(1);
-		}
-	}
-	server[ind_serv].setServLocation(tmp);
-}
+/*
+The function is like a gatekeeper. 
+It reads a list of instructions (the configuration file) for setting up servers. It checks each instruction carefully to make sure it's valid and makes sense.
+If it finds an instruction that's wrong or doesn't make sense, it stops and reports an error. 
+If all the instructions are good, it sets up the servers according to the instructions.
+*/
 
 void ServerSocket::readConfigFile(const std::string &configFile)
 {
