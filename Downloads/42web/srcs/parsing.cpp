@@ -1,89 +1,83 @@
 #include "webserv.hpp"
 
-int	ServerSocket::checkPerms(const std::string &buffer)
+//It iterates through locations to find a match
+//	- Checks deny,
+//	then allow conditions on matching locations
+//	-		Returns allow or configured deny code
+//	-		No match denies the request
+
+bool	ServerSocket::isMethodAllowed(const std::string &method, int locationIndex)
 {
-	std::map<std::string, std::string>::iterator it;
-	std::istringstream request(buffer);
-	std::string method, path, line, path_cpy;
-	request >> method >> path;
-	it = currentServ.getServConf("web_root");
-	if (it != currentServ.getConfEnd())
+	for (std::map<std::string, std::string>::iterator it = currentServ.getLocationBegin(locationIndex); it != currentServ.getLocationEnd(locationIndex); it++)
 	{
-		path_cpy = it->second + path_cpy;
-		struct stat s;
-		if (stat(path_cpy.c_str(), &s) == 0)
+		if (it->second == "allow" && it->first == method)
 		{
-			path_cpy = path;
-			if(s.st_mode & S_IFDIR)
-			{
-				if (path_cpy[path_cpy.length() - 1] != '/')
-					path_cpy.append("/");
-			}
-		}
-		else
-			path_cpy = path;
-	}
-
-	int trigger = 0;
-	int trigger2 = 0;
-	while (trigger2 == 0)
-	{
-		for (int i = 0; i < currentServ.getLocationSize() && trigger == 0; i++)
-		{
-			std::map<std::string, std::string>::iterator it = currentServ.getServLocation(i, "location");
-			if (!((it->second.substr(0, it->second.rfind("/")) + "/").compare(path_cpy.substr(0, path_cpy.rfind("/")) + "/")))
-			{
-				trigger2 = 1;
-				it = currentServ.getServLocation(i, "deny");
-				if (it != currentServ.getLocationEnd(i))
-				{
-					if (it->second == "all")
-					{
-						it = currentServ.getServLocation(i, "return");
-						std::istringstream iss(it->second);
-        				double value;
-        				iss >> value; 
-
-						if (it != currentServ.getLocationEnd(i))
-							return (value);
-					}
-				}
-				for (it = currentServ.getLocationBegin(i); it != currentServ.getLocationEnd(i); it++)
-				{
-					if (it->second == "allow" && it->first == method)
-					{
-						trigger = 1;
-						break ;
-					}
-				}
-			}
-		}
-		if (path_cpy.length() == 1)
-			break;
-		if (trigger2 == 0)
-		{
-			int pos = path_cpy.length();
-			pos--;
-			while (path_cpy[pos] != '/')
-				pos--;
-			path_cpy = path_cpy.substr(0, pos);
+			return true;
 		}
 	}
-	return (trigger);
+	return false;
 }
 
-std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
+int ServerSocket::getReturnCode(int locationIndex)
 {
+	std::map<std::string, std::string>::iterator it = currentServ.getServLocation(locationIndex, "return");
+	if (it != currentServ.getLocationEnd(locationIndex))
+	{
+		std::istringstream iss(it->second);
+		double value;
+		iss >> value;
+		return value;
+	}
+	return 0;
+}
+
+bool ServerSocket::isLocationDenied(int locationIndex)
+{
+	std::map<std::string, std::string>::iterator it = currentServ.getServLocation(locationIndex, "deny");
+	return it != currentServ.getLocationEnd(locationIndex) && it->second == "all";
+}
+
+#include <sys/stat.h> // Add the missing include statement
+
+bool ServerSocket::doesLocationMatch(const std::string &path, int locationIndex)
+{
+	std::map<std::string, std::string>::iterator it = currentServ.getServLocation(locationIndex, "location");
+	return it->second.substr(0, it->second.rfind("/")) == path.substr(0, path.rfind("/"));
+}
+
+int ServerSocket::checkPerms(const std::string &buffer)
+{
+	std::istringstream request(buffer);
+	std::string method, path;
+	request >> method >> path;
+
+	std::string cpy_path = currentServ.getServConf("web_root")->second + path;
 	struct stat s;
-	std::string path_cpy;
-	std::string tmp;
+	if (stat(cpy_path.c_str(), &s) == 0 && s.st_mode & S_IFDIR && cpy_path[cpy_path.length() - 1] != '/')
+		cpy_path.append("/");
+	int i = 0;
+	while (i < currentServ.getLocationSize())
+	{
+		if (doesLocationMatch(cpy_path, i)) {
+			if (isLocationDenied(i)) {
+				return getReturnCode(i);
+			}
+			if (isMethodAllowed(method, i)) {
+				return 1;
+			}
+		}
+		i++;
+	}
+}
+
+std::map<int, std::string> ServerSocket::checkForRedirects(std::string path)
+{
 	std::map<int, std::string> response;
 	std::map<std::string, std::string>::iterator it;
-	int trigger = 0;
 
 	for (int k = 0; k < currentServ.getLocationSize(); k++)
 	{
-	 	it = currentServ.getServLocation(k, "location");
+		it = currentServ.getServLocation(k, "location");
 		if (it != currentServ.getLocationEnd(k))
 		{
 			if (it->second == path)
@@ -92,18 +86,31 @@ std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
 				if (it != currentServ.getLocationEnd(k))
 				{
 					response[1] = "HTTP/1.1 302 Found\r\nLocation: " + it->second + "\r\n\r\n";
-					return (response);
+					return response;
 				}
 			}
 		}
 	}
-	path_cpy = path;
-	if (path_cpy[path_cpy.length() - 1] != '/')
-		path_cpy.append("/");
-	it = currentServ.getServConf("web_root");
+
+	return response;
+}
+
+void ServerSocket::normalizePath(std::string &path)
+{
+	if (path[path.length() - 1] != '/')
+		path.append("/");
+}
+
+void ServerSocket::prependWebRoot(std::string &path)
+{
+	std::map<std::string, std::string>::iterator it = currentServ.getServConf("web_root");
 	if (it != currentServ.getConfEnd())
 		path = it->second + path;
-	if (path_cpy.length() == 1)
+}
+
+void ServerSocket::appendDefaultFileIfRoot(std::string &path, int &trigger)
+{
+	if (path.length() == 1)
 	{
 		for (int i = 0; i < currentServ.getLocationSize(); i++)
 		{
@@ -112,7 +119,7 @@ std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
 			{
 				if (it->second == "/")
 				{
-					std::map<std::string, std::string>::iterator it = currentServ.getServLocation(i, "default_file");
+					it = currentServ.getServLocation(i, "default_file");
 					if (it != currentServ.getLocationEnd(i))
 					{
 						path = path + it->second;
@@ -122,78 +129,95 @@ std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
 			}
 		}
 	}
-	if (stat(path.c_str(), &s) == 0 && trigger == 0)
+}
+
+void ServerSocket::handleDirectoryOrFile(std::string &path, int &trigger)
+{
+	struct stat s;
+	std::string path_cpy = path;
+	std::map<std::string, std::string>::iterator it;
+
+	if (stat(path.c_str(), &s) == 0)
 	{
-		if(s.st_mode & S_IFDIR)
+		if (s.st_mode & S_IFDIR)
 		{
-			int path_cpy_len = path_cpy.length();
-			while (trigger == 0)
+			// If path is a directory, check if autoindex is on
+			for (int i = 0; i < currentServ.getLocationSize(); i++)
 			{
-				for (int i = 0; i < currentServ.getLocationSize(); i++)
+				it = currentServ.getServLocation(i, "location");
+				if (it != currentServ.getLocationEnd(i))
 				{
-					it = currentServ.getServLocation(i, "location");
-					if (it != currentServ.getLocationEnd(i))
+					if (it->second == path)
 					{
-						if (it->second == path_cpy)
+						it = currentServ.getServLocation(i, "autoindex");
+						if (it != currentServ.getLocationEnd(i) && it->second == "on")
 						{
-							it = currentServ.getServLocation(i, "autoindex");
-							if (it != currentServ.getLocationEnd(i))
-							{
-								trigger = 2;
-								if (it->second == "on")
-								{
-									std::map<std::string, std::string>::const_iterator it = currentServ.getServConf("index");
-									if (it != currentServ.getConfEnd())
-									{
-										if (path_cpy_len == 1)
-											path = path + it->second;
-										else
-											path = path + "/" + it->second;		
-									}
-									else
-									{
-										if (path_cpy_len == 1)
-											path = path + "index.html";
-										else
-											path = path + "/index.html";
-									}
-									trigger = 1;
-								}
-							}
+							path = path + "index.html";
+							trigger = 1;
 						}
 					}
 				}
-				if (path_cpy.length() == 1)
-					break;
-				if (trigger == 0)
-				{
-					int pos = path_cpy.length() - 1;
-					if (path_cpy[pos] == '/')
-						pos--;
-					while (path_cpy[pos] != '/')
-						pos--;
-					path_cpy = path_cpy.substr(0, pos + 1);
-				}
 			}
 		}
-		else if( s.st_mode & S_IFREG )
+		else if (s.st_mode & S_IFREG)
+		{
+			// If path is a file, set trigger to 1
 			trigger = 1;
+		}
 	}
-	else
-		trigger = 1;
-	if (trigger == 0 || trigger == 2)
+}
+
+std::map<int, std::string> ServerSocket::generateResponse(std::string path, int trigger)
+{
+	std::map<int, std::string> response;
+	FILE *fin;
+
+	if (trigger == 0)
 	{
-		response[1] = callErrorFiles(403);
-		return (response);
+		// If trigger is 0, return 403 Forbidden
+		response[1] = "HTTP/1.1 403 Forbidden\r\n\r\n";
 	}
-	FILE * fin;
-	fin = fopen(path.c_str(), "rb");
-	if (fin == NULL)
-		response[-1] = "";
 	else
-		response[0] = path;
-	fclose(fin);
-	return(response);
+	{
+		// If trigger is 1, try to open the file
+		fin = fopen(path.c_str(), "rb");
+		if (fin == NULL)
+		{
+			// If file cannot be opened, return 404 Not Found
+			response[1] = "HTTP/1.1 404 Not Found\r\n\r\n";
+		}
+		else
+		{
+			// If file can be opened, return 200 OK and the file content
+			char buffer[1024];
+			std::string fileContent;
+			while (fgets(buffer, sizeof(buffer), fin) != NULL)
+			{
+				fileContent += buffer;
+			}
+			fclose(fin);
+
+			response[0] = "HTTP/1.1 200 OK\r\n\r\n" + fileContent;
+		}
+	}
+
+	return response;
+}
+
+std::map<int, std::string> ServerSocket::parseFileInfo(std::string path)
+{
+	int trigger = 0;
+
+	std::map<int, std::string> response = checkForRedirects(path);
+	if (!response.empty())
+		return response;
+
+	normalizePath(path);
+	prependWebRoot(path);
+	appendDefaultFileIfRoot(path, trigger);
+	handleDirectoryOrFile(path, trigger);
+
+	return generateResponse(path, trigger);
 }
 
 void ServerSocket::parseLocation(const std::vector<std::string> &tmpLine, int index, int ind_serv)

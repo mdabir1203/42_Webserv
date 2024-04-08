@@ -199,51 +199,82 @@ int ServerSocket::_receive(int socket_ID)
 }
 
 
+// This is a method of the ServerSocket class that handles responses to client requests.
 int ServerSocket::_respond(int socket_ID)
 {
+	// The socket ID is adjusted by subtracting 3 and the number of server ports.
 	int socket_ID_tmp = socket_ID - 3 - servPortsCount;
-	if (socket_ID_tmp > MAX_CLIENTS + 1 || readBuffer[socket_ID_tmp].length() == 0)
-		return -1; // Combine conditions for early return
 
+	// If the adjusted socket ID is greater than the maximum number of clients plus one, or the read buffer at the index of the adjusted socket ID is empty, the function returns -1.
+	if (socket_ID_tmp > MAX_CLIENTS + 1 || readBuffer[socket_ID_tmp].length() == 0)
+		return -1;
+
+	// The server name is set to the last part of the read buffer at the index of the adjusted socket ID, after the string "Host: ".
 	serverName = getLastPart(readBuffer[socket_ID_tmp], "Host: ");
+
+	// Variables for the return value, the response string, and the host string are declared.
 	int ret;
 	std::string response;
 	std::string host;
+
+	// The position of the string "Host: " in the read buffer at the index of the adjusted socket ID is found.
 	size_t pos = readBuffer[socket_ID_tmp].find("Host: ");
-	if (pos != std::string::npos) // Assuming npos is defined elsewhere
+
+	// If "Host: " is found in the read buffer...
+	if (pos != std::string::npos)
 	{
+		// The position is moved past "Host: ".
 		pos += 6;
+
+		// The position is moved to the next colon or the end of the read buffer.
 		while (pos < readBuffer[socket_ID_tmp].length() && readBuffer[socket_ID_tmp][pos] != ':')
 			pos++;
 		pos++;
+
+		// The limit is set to the position of the next carriage return or the end of the read buffer.
 		size_t limit = pos;
 		while (limit < readBuffer[socket_ID_tmp].length() && readBuffer[socket_ID_tmp][limit] != '\r')
 			limit++;
+
+		// The host string is set to the substring of the read buffer from the position to the limit.
 		limit -= pos;
 		host = readBuffer[socket_ID_tmp].substr(pos, limit);
 	}
+
+	// If the host string is empty, the function returns -1.
 	if (host.empty())
 		return -1;
 
-	// Assuming server[j].getPorts() returns a vector of integers
+	// The server ports are checked for a match with the host string.
 	for (int j = 0; j < servSize; ++j)
 	{
 		for (size_t i = 0; i < server[j].getPorts().size(); ++i)
 		{
-			if (server[j].getPorts()[i] == atoi(host.c_str())) // Use atoi for port numbers
+			// If a match is found, the current server is set to the matching server.
+			if (server[j].getPorts()[i] == atoi(host.c_str()))
 			{
 				currentServ = server[j];
 				break;
 			}
 		}
 	}
+
+	// The current socket is set to the socket ID.
 	currentSocket = socket_ID;
+
+	// If the read buffer at the index of the adjusted socket ID is empty, the response is set to an error message. Otherwise, the response is set to the result of handling the HTTP request.
 	if (readBuffer[socket_ID_tmp].length() == 0)
 		response = callErrorFiles(400);
 	else
 		response = handleHttpRequest(readBuffer[socket_ID_tmp]);
+
+	// The response is sent to the client.
 	ret = send(socket_ID, response.c_str(), response.size(), 0);
+
+	// The read buffer at the index of the adjusted socket ID is cleared.
 	readBuffer[socket_ID_tmp].clear();
+
+	// The function returns the result of the send operation.
 	return ret;
 }
 
@@ -378,3 +409,4 @@ int main(int argc, char **argv)
 		std::cout << "Wrong number of arguments" << std::endl;
 	return (EXIT_FAILURE);
 }
+
