@@ -129,14 +129,12 @@ bool  									RequestConfig::getAutoIndex() const {
 
 //SETTERS
 
-void								RequestConfig::setPath(int code)
+void RequestConfig::setPath(int code)
 {
-	//default value hardcoded because at the moment I can't get access to values from config file
-	this->_path = "./test_us/error/error/";
-	this->_path += to_string(code) + ".html";
-	// this->_path = this->_error_page[code];
+    // Set the correct path for the error pages
+    this->_path = "webserv/resources/var/www/files/error_pages";
+    this->_path += to_string(code) + ".html";
 }
-
 void								RequestConfig::setPath(const std::string &path)
 {
 	this->_path = path;
