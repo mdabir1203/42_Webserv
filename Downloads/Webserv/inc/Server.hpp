@@ -10,10 +10,16 @@ class Server {
     public:
         Server(int port);
         bool start();
+        
     private:
         int port;
         int serverSocket;
         struct sockaddr_in serverAddr;
+
+
+        void createSocket();
+        void bindSocket();
+        void listenSocket();
 };
 
 #endif
