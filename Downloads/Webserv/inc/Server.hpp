@@ -10,7 +10,9 @@ class Server {
     public:
         Server(int port);
         bool start();
-        
+        int getServerSocket() const;
+        int getPort() const;
+
     private:
         int port;
         int serverSocket;

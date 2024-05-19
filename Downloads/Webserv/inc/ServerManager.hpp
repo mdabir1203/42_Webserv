@@ -9,6 +9,8 @@ class ServerManager
     public:
         bool initialize();
         void run();
+        void addServer(const Server& server);
+        
     private:
         std::vector<Server> servers;
 };

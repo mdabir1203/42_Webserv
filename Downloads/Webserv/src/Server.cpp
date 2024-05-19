@@ -3,6 +3,16 @@
 #include <cstring>
 #include <unistd.h>
 
+int Server::getServerSocket() const
+{
+    return serverSocket;
+}
+
+int Server::getPort() const
+{
+    return port;
+}
+
 void Server::createSocket()
 {
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
