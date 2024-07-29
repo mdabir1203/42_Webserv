@@ -1,17 +1,13 @@
-#include <iostream>
-#include "server.hpp"
+#include "server/HttpServer.hpp"
+#include "utils/Logger.hpp"
 
-int main()
-{
-    HTTPServer server;
-
-    if (!server.initialize())
-    {
-        std::cerr << "Failed to initialize server" << std::endl;
+int main() {
+    try {
+        HttpServer server(5500);
+        server.run();
+    } catch (const std::exception& e) {
+        Logger::log("Exception: " + std::string(e.what()));
         return 1;
     }
-
-    std::cout << "Server started.. Running..." << std::endl;
-    server.run();
     return 0;
 }
