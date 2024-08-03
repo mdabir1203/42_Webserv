@@ -4,13 +4,13 @@ NAME = webserv
 
 all: $(NAME)
 
-$(NAME): webserv.cpp config.cpp request.cpp response.cpp utils.cpp
-    $(CC) $(CFLAGS) -o $(NAME) $^
+$(NAME): src/main.cpp
+	$(CC) $(CFLAGS) -o $(NAME) $^
 
 clean:
-    rm -f $(NAME)
+	rm -f $(NAME)
 
 fclean: clean
-    rm -f *.o
+	rm -f *.o
 
 re: fclean all

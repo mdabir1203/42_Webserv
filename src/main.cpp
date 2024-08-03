@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sstream>
+#include <cstdio>
 
 #define PORT 5500
 #define BUFFER_SIZE 1024
@@ -74,14 +76,16 @@ private:
         // Parse HTTP request
         std::vector<std::string> request_lines;
         size_t pos = 0;
-        while ((pos = request.find("\r\n"))!= std::string::npos) {
+        while ((pos = request.find("\r\n")) != std::string::npos) {
             request_lines.push_back(request.substr(0, pos));
             request.erase(0, pos + 2);
         }
 
         // Handle HTTP request
-        if (request_lines[0].find("GET")!= std::string::npos) {
+        if (request_lines[0].find("GET") != std::string::npos) {
             handleGetRequest(client_sockfd);
+        } else if (request_lines[0].find("POST") != std::string::npos) {
+            handlePostRequest(client_sockfd, request);
         } else {
             sendError(client_sockfd, 405, "Method Not Allowed");
         }
@@ -89,12 +93,26 @@ private:
 
     void handleGetRequest(int client_sockfd) {
         // Send HTTP response
-        std::string response = "HTTP/1.1 200 OK\r\n\r\nWhatt!";
+        std::string response = "HTTP/1.1 200 OK\r\n\r\nHello, GET!";
+        send(client_sockfd, response.c_str(), response.size(), 0);
+    }
+
+    void handlePostRequest(int client_sockfd, const std::string& request) {
+        // Extract the body of the POST request
+        size_t body_pos = request.find("\r\n\r\n");
+        std::string body = (body_pos != std::string::npos) ? request.substr(body_pos + 4) : "";
+
+        std::cout << "Received POST body: " << body << std::endl;
+
+        // Send HTTP response
+        std::string response = "HTTP/1.1 200 OK\r\n\r\nHello, POST!";
         send(client_sockfd, response.c_str(), response.size(), 0);
     }
 
     void sendError(int client_sockfd, int code, const std::string& message) {
-        std::string response = "HTTP/1.1 " + std::to_string(code) + " " + message + "\r\n\r\n";
+        std::ostringstream responseStream;
+        responseStream << "HTTP/1.1 " << code << " " << message << "\r\n\r\n";
+        std::string response = responseStream.str();
         send(client_sockfd, response.c_str(), response.size(), 0);
     }
 
@@ -106,4 +124,3 @@ int main() {
     server.start();
     return 0;
 }
-		
