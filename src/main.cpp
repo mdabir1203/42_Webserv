@@ -11,7 +11,7 @@
 #include <fstream>
 
 #define BUFFER_SIZE 1024
-#define MAX_BODY_SIZE 1024
+#define MAX_BODY_SIZE 512
 
 class HttpServer {
 public:
@@ -108,7 +108,7 @@ private:
 void handleGetRequest(int client_sockfd, const std::string& path) {
     std::string response;
     if (path == "/") {
-        response = "HTTP/1.1 200 OK\r\n\r\nHello, GET!";
+        response = "HTTP/1.1 200 OK\r\n\r\nShortestServer!";
     } else {
         std::string filePath = "." + path; // Use std::string for concatenation
         std::ifstream file(filePath.c_str()); // Convert to C-string for ifstream
@@ -130,7 +130,7 @@ void handleGetRequest(int client_sockfd, const std::string& path) {
 
         std::cout << "Received POST body: " << body << std::endl;
 
-        std::string response = "HTTP/1.1 200 OK\r\n\r\nHello, POST!";
+        std::string response = "HTTP/1.1 200 OK\r\n\r\nShortest UPLOAD/POST Method!";
         send(client_sockfd, response.c_str(), response.size(), 0);
     }
 
