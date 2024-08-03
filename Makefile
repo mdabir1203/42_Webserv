@@ -1,18 +1,16 @@
-CXX = g++
-CXXFLAGS = -Wall -Wextra -pedantic -std=c++98
-SRCS = src/main.cpp src/server.cpp
-OBJS = $(SRCS:.cpp=.o)
-TARGET = webserver
+CC = g++
+CFLAGS = -Wall -Wextra -Werror -std=c++98
+NAME = webserv
 
-all: $(TARGET)
+all: $(NAME)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+$(NAME): webserv.cpp config.cpp request.cpp response.cpp utils.cpp
+    $(CC) $(CFLAGS) -o $(NAME) $^
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+    rm -f $(NAME)
 
-.PHONY: all clean
+fclean: clean
+    rm -f *.o
+
+re: fclean all
