@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Body Scene with Visible Watermark</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script>
+        // Set up scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create a simple body shape (cube for demonstration)
+        const geometry = new THREE.BoxGeometry(1, 1.5, 0.5);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        const body = new THREE.Mesh(geometry, material);
+        scene.add(body);
+
+        // Position camera
+        camera.position.z = 5;
+
+        // Add lights
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        // GUI for adjusting body properties
+        const gui = new dat.GUI();
+        const bodyFolder = gui.addFolder('Body');
+        bodyFolder.add(body.scale, 'x', 0.1, 2).name('Width');
+        bodyFolder.add(body.scale, 'y', 0.1, 2).name('Height');
+        bodyFolder.add(body.scale, 'z', 0.1, 2).name('Depth');
+        bodyFolder.open();
+
+        // Create improved warping text watermark
+        const loader = new THREE.FontLoader();
+        loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+            const textGeometry = new THREE.TextGeometry('uknowWhoAb1r', {
+                font: font,
+                size: 1.0, // Increased size
+                height: 0.2,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.02,
+                bevelSegments: 5
+            });
+
+            textGeometry.center();
+
+            const textMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff00ff, // Bright magenta color
+                transparent: true, 
+                opacity: 0.8 // Increased opacity
+            });
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            
+            textMesh.position.set(0, 0, 1); // Positioned in front of the body
+            scene.add(textMesh);
+
+            // Outline for contrast
+            const outlineMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
+            const outlineMesh = new THREE.Mesh(textGeometry, outlineMaterial);
+            outlineMesh.position.copy(textMesh.position);
+            outlineMesh.scale.multiplyScalar(1.05);
+            scene.add(outlineMesh);
+
+            // Enhanced warping animation
+            function warpText(time) {
+                const vertices = textGeometry.attributes.position.array;
+                for (let i = 0; i < vertices.length; i += 3) {
+                    vertices[i] += Math.sin((vertices[i] + time) * 2) * 0.01;
+                    vertices[i + 1] += Math.cos((vertices[i] + time) * 2) * 0.01;
+                    vertices[i + 2] += Math.sin((vertices[i] + time) * 2) * 0.01;
+                }
+                textGeometry.attributes.position.needsUpdate = true;
+                outlineMesh.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Pulsating animation
+            function pulsateText(time) {
+                const scale = 1 + Math.sin(time * 2) * 0.1;
+                textMesh.scale.set(scale, scale, scale);
+                outlineMesh.scale.set(scale * 1.05, scale * 1.05, scale * 1.05);
+            }
+
+            // Update animation function
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = Date.now() * 0.001;
+                body.rotation.x += 0.01;
+                body.rotation.y += 0.01;
+                warpText(time);
+                pulsateText(time);
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+
+        // Handle window resizing
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
