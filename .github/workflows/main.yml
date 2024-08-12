@@ -1,8 +1,35 @@
-name: hello-world
-on: push
-jobs: 
-  hello-world-job:
+name: C++ CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup-cpp:
     runs-on: ubuntu-latest
-    steps: 
-      - name: Check out repository code
-        uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Cpp (C++ / C)
+        uses: aminya/setup-cpp@v0.37.0
+        with:
+          compiler: gcc-11
+          cmake: true
+          ninja: true
+          vcpkg: true
+          ccache: true
+          cppcheck: true
+          
+      # Add your build steps here
+      - name: Build project
+        run: |
+          mkdir build && cd build
+          cmake ..
+          make
+          
+      # Add your test steps here
+      - name: Run tests
+        run: |
+          cd build
+          ctest
