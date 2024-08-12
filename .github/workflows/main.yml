@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  setup-cpp:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -16,20 +16,26 @@ jobs:
         with:
           compiler: gcc-11
           cmake: true
-          ninja: true
-          vcpkg: true
-          ccache: true
-          cppcheck: true
+          make: true
           
-      # Add your build steps here
       - name: Build project
-        run: |
-          mkdir build && cd build
-          cmake ..
-          make
+        run: make
           
-      # Add your test steps here
       - name: Run tests
+        run: make test
+        
+      - name: Run siege test
         run: |
-          cd build
-          ctest
+          cd siegetest
+          # Add command to run siege test here
+          # For example: siege -c 100 -t 1M http://localhost:8080
+        
+      - name: Lint code
+        run: |
+          # Add linting steps here if you have any
+          # For example: cppcheck src/
+          
+      - name: Check formatting
+        run: |
+          # Add formatting check here if you use a formatter
+          # For example: clang-format --dry-run --Werror src/**/*.cpp src/**/*.h
